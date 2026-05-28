@@ -4,18 +4,14 @@ import qs.Common
 import qs.Services
 import qs.Widgets
 import qs.Modules.Plugins
-import "../dms-common"
+import "./dms-common"
 
 PluginSettings {
     id: root
     pluginId: "qrGenerator"
 
-    PluginHeader {
-        title: "QR Generator Settings"
-    }
-
     SettingsCard {
-        SectionTitle { text: "Generation & Privacy" }
+        SectionTitle { text: "Generation & Privacy"; icon: "security" }
 
         ToggleSetting {
             settingKey: "clearQrOnClose"
@@ -38,7 +34,7 @@ PluginSettings {
     }
 
     SettingsCard {
-        SectionTitle { text: "Display & UI" }
+        SectionTitle { text: "Display & UI"; icon: "desktop_windows" }
 
         SelectionSetting {
             settingKey: "pillStyle"
@@ -53,7 +49,7 @@ PluginSettings {
     }
 
     SettingsCard {
-        SectionTitle { text: "Installation" }
+        SectionTitle { text: "Installation"; icon: "download" }
 
         InfoText {
             text: "Install the required package:"
@@ -80,7 +76,7 @@ PluginSettings {
     }
 
     SettingsCard {
-        SectionTitle { text: "Behavior" }
+        SectionTitle { text: "Behavior"; icon: "settings" }
 
         ToggleSetting {
             settingKey: "showHints"
@@ -88,5 +84,9 @@ PluginSettings {
             description: "Display helpful usage tips and shortcuts at the bottom of the popout."
             defaultValue: true
         }
+    }
+
+    FeedbackCard {
+        repoUrl: "https://github.com/hthienloc/dms-qr-generator"
     }
 }
