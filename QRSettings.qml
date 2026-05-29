@@ -11,48 +11,48 @@ PluginSettings {
     pluginId: "qrGenerator"
 
     SettingsCard {
-        SectionTitle { text: "Generation & Privacy"; icon: "security" }
+        SectionTitle { text: I18n.tr("Generation & Privacy"); icon: "security" }
 
         ToggleSetting {
             settingKey: "clearQrOnClose"
-            label: "Clear QR Code on Close"
-            description: "Automatically clear the text and QR code when you close the popout for privacy."
+            label: I18n.tr("Clear QR Code on Close")
+            description: I18n.tr("Automatically clear the text and QR code when you close the popout for privacy.")
             defaultValue: true
         }
 
         SelectionSetting {
             settingKey: "qrSize"
-            label: "QR Code Size"
-            description: "The resolution/scale of the generated QR code."
+            label: I18n.tr("QR Code Size")
+            description: I18n.tr("The resolution/scale of the generated QR code.")
             options: [
-                { label: "Small", value: "3" },
-                { label: "Medium", value: "6" },
-                { label: "Large", value: "10" }
+                { label: I18n.tr("Small"), value: "3" },
+                { label: I18n.tr("Medium"), value: "6" },
+                { label: I18n.tr("Large"), value: "10" }
             ]
             defaultValue: "6"
         }
     }
 
     SettingsCard {
-        SectionTitle { text: "Display & UI"; icon: "desktop_windows" }
+        SectionTitle { text: I18n.tr("Display & UI"); icon: "desktop_windows" }
 
         SelectionSetting {
             settingKey: "pillStyle"
-            label: "Bar Display Style"
-            description: "Choose how the plugin is displayed on the bar."
+            label: I18n.tr("Bar Display Style")
+            description: I18n.tr("Choose how the plugin is displayed on the bar.")
             options: [
-                { label: "Icon Only", value: "icon" },
-                { label: "Icon + Text", value: "text" }
+                { label: I18n.tr("Icon Only"), value: "icon" },
+                { label: I18n.tr("Icon + Text"), value: "text" }
             ]
             defaultValue: "icon"
         }
     }
 
     SettingsCard {
-        SectionTitle { text: "Installation"; icon: "download" }
+        SectionTitle { text: I18n.tr("Installation"); icon: "download" }
 
         InfoText {
-            text: "Install the required package:"
+            text: I18n.tr("Install the required package:")
         }
 
         Column {
@@ -76,17 +76,17 @@ PluginSettings {
     }
 
     SettingsCard {
-        SectionTitle { text: "Behavior"; icon: "settings" }
+        SectionTitle { text: I18n.tr("Behavior"); icon: "settings" }
 
         ToggleSetting {
             settingKey: "showHints"
-            label: "Show Hints"
-            description: "Display helpful usage tips and shortcuts at the bottom of the popout."
+            label: I18n.tr("Show Hints")
+            description: I18n.tr("Display helpful usage tips and shortcuts at the bottom of the popout.")
             defaultValue: true
         }
     }
 
-    FeedbackCard {
+    PluginAbout {
         repoUrl: "https://github.com/hthienloc/dms-qr-generator"
     }
 }

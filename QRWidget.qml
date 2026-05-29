@@ -415,7 +415,7 @@ PluginComponent {
 
                         DankButton {
                             id: wifiButton
-                            text: pluginRoot.isFetchingWifi ? "Fetching Wi-Fi..." : "Share Current Wi-Fi"
+                            text: pluginRoot.isFetchingWifi ? I18n.tr("Fetching Wi-Fi...") : I18n.tr("Share Current Wi-Fi")
                             width: parent.width
                             iconName: pluginRoot.isFetchingWifi ? "sync" : "wifi"
                             backgroundColor: Theme.secondary
@@ -515,7 +515,7 @@ PluginComponent {
                             }
                             StyledText {
                                 anchors.horizontalCenter: parent.horizontalCenter
-                                text: "Ready to generate"
+                                text: I18n.tr("Ready to generate")
                                 color: Theme.onSurfaceVariant
                                 font.pixelSize: Theme.fontSizeSmall
                             }
@@ -533,7 +533,7 @@ PluginComponent {
                             spacing: Theme.spacingS
                             
                             DankButton {
-                                text: "Copy Image"
+                                text: I18n.tr("Copy Image")
                                 width: (parent.width - Theme.spacingS) / 2
                                 iconName: "content_copy"
                                 backgroundColor: Theme.primary
@@ -542,7 +542,7 @@ PluginComponent {
                             }
 
                             DankButton {
-                                text: "Save Image"
+                                text: I18n.tr("Save Image")
                                 width: (parent.width - Theme.spacingS) / 2
                                 iconName: "save"
                                 backgroundColor: Theme.surfaceContainerHighest
@@ -560,11 +560,11 @@ PluginComponent {
 
                         HintItem {
                             icon: "lightbulb"
-                            text: "Tip: Drop a link or image on the pill icon to generate/decode QR"
+                            text: I18n.tr("Tip: Drop a link or image on the pill icon to generate/decode QR")
                         }
                         HintItem {
                             icon: "info"
-                            text: "Right-click icon pill to paste, Enter to copy"
+                            text: I18n.tr("Right-click icon pill to paste, Enter to copy")
                         }
                     }
                 }
