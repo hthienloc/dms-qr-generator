@@ -11,19 +11,31 @@ PluginSettings {
     pluginId: "qrGenerator"
 
     SettingsCard {
-        SectionTitle { text: I18n.tr("Generation & Privacy"); icon: "security" }
+        id: generalSection
+        SectionTitle { 
+            text: I18n.tr("Generation & Privacy")
+            icon: "security"
+            showReset: clearQrOnClose.isDirty || qrSize.isDirty
+            onResetClicked: {
+                clearQrOnClose.resetToDefault();
+                qrSize.resetToDefault();
+            }
+        }
 
-        ToggleSetting {
+        ToggleSettingPlus {
+            id: clearQrOnClose
             settingKey: "clearQrOnClose"
             label: I18n.tr("Clear QR Code on Close")
             description: I18n.tr("Automatically clear the text and QR code when you close the popout for privacy.")
             defaultValue: true
         }
 
-        SelectionSetting {
+        Separator {}
+
+        SelectionSettingPlus {
+            id: qrSize
             settingKey: "qrSize"
             label: I18n.tr("QR Code Size")
-            description: I18n.tr("The resolution/scale of the generated QR code.")
             options: [
                 { label: I18n.tr("Small"), value: "3" },
                 { label: I18n.tr("Medium"), value: "6" },
@@ -34,12 +46,20 @@ PluginSettings {
     }
 
     SettingsCard {
-        SectionTitle { text: I18n.tr("Display & UI"); icon: "desktop_windows" }
+        id: displaySection
+        SectionTitle { 
+            text: I18n.tr("Display & UI")
+            icon: "desktop_windows"
+            showReset: pillStyle.isDirty
+            onResetClicked: {
+                pillStyle.resetToDefault();
+            }
+        }
 
-        SelectionSetting {
+        SelectionSettingPlus {
+            id: pillStyle
             settingKey: "pillStyle"
             label: I18n.tr("Bar Display Style")
-            description: I18n.tr("Choose how the plugin is displayed on the bar.")
             options: [
                 { label: I18n.tr("Icon Only"), value: "icon" },
                 { label: I18n.tr("Icon + Text"), value: "text" }
@@ -76,13 +96,42 @@ PluginSettings {
     }
 
     SettingsCard {
-        SectionTitle { text: I18n.tr("Behavior"); icon: "settings" }
+        id: behaviorSection
+        SectionTitle { 
+            text: I18n.tr("Behavior")
+            icon: "settings"
+            showReset: showHints.isDirty
+            onResetClicked: {
+                showHints.resetToDefault();
+            }
+        }
 
-        ToggleSetting {
+        ToggleSettingPlus {
+            id: showHints
             settingKey: "showHints"
             label: I18n.tr("Show Hints")
-            description: I18n.tr("Display helpful usage tips and shortcuts at the bottom of the popout.")
             defaultValue: true
+        }
+    }
+
+    SettingsCard {
+        SectionTitle { 
+            id: usageTitle
+            text: I18n.tr("Usage Guide")
+            icon: "menu_book" 
+            collapsible: true
+            settingKey: "usageGuideExpanded"
+        }
+
+        UsageGuide {
+            expanded: usageTitle.isExpanded
+            items: [
+                I18n.tr("<b>Left-click</b> the pill to open the generator."),
+                I18n.tr("<b>Right-click</b> the pill to generate from clipboard."),
+                I18n.tr("<b>Drop image</b> onto the pill or popout to scan QR code."),
+                I18n.tr("<b>Drop text</b> onto the pill or popout to generate QR code."),
+                I18n.tr("Click the <b>WiFi icon</b> to quickly share current network.")
+            ]
         }
     }
 
