@@ -221,6 +221,27 @@ PluginComponent {
         )
     }
 
+    function scanFromScreenshot() {
+        pluginRoot.isDecoding = true;
+        const tempPath = "/tmp/dms-qr-screenshot.png";
+        
+        Proc.runCommand(
+            "screenshot-qr",
+            ["dms", "screenshot", "region", "--no-confirm", "--no-notify", "--dir", "/tmp", "--filename", "dms-qr-screenshot.png"],
+            (stdout, exitCode) => {
+                pluginRoot.isDecoding = false;
+                if (exitCode === 0) {
+                    pluginRoot.decodeQR(tempPath);
+                    pluginRoot.triggerPopout();
+                } else {
+                    ToastService.showError("Failed to take screenshot or selection cancelled.");
+                }
+            },
+            0
+        );
+    }
+
+
     pillRightClickAction: () => {
         // Fetch clipboard and generate QR before opening popout
         Proc.runCommand(
@@ -310,6 +331,17 @@ PluginComponent {
                     pluginRoot.triggerPopout();
                 }
             }
+
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.MiddleButton
+                cursorShape: Qt.PointingHandCursor
+                onClicked: (mouse) => {
+                    if (mouse.button === Qt.MiddleButton) {
+                        pluginRoot.scanFromScreenshot();
+                    }
+                }
+            }
         }
     }
 
@@ -366,6 +398,17 @@ PluginComponent {
                         }
                     }
                     pluginRoot.triggerPopout();
+                }
+            }
+
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.MiddleButton
+                cursorShape: Qt.PointingHandCursor
+                onClicked: (mouse) => {
+                    if (mouse.button === Qt.MiddleButton) {
+                        pluginRoot.scanFromScreenshot();
+                    }
                 }
             }
         }
@@ -564,7 +607,7 @@ PluginComponent {
                         }
                         HintItem {
                             icon: "info"
-                            text: I18n.tr("Right-click icon pill to paste, Enter to copy")
+                            text: I18n.tr("Right-click icon pill to paste, Middle-click to scan screenshot")
                         }
                     }
                 }

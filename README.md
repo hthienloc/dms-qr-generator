@@ -30,6 +30,7 @@ git clone https://github.com/hthienloc/dms-qr-generator ~/.config/DankMaterialSh
 |--------|--------|
 | Left click | Open generator |
 | Right click | Paste & generate from clipboard |
+| Middle click | Take screenshot & scan QR code |
 | Drop image | Scan QR code |
 | Drop text | Generate QR code |
 

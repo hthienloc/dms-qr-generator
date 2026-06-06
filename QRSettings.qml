@@ -128,6 +128,7 @@ PluginSettings {
             items: [
                 I18n.tr("<b>Left-click</b> the pill to open the generator."),
                 I18n.tr("<b>Right-click</b> the pill to generate from clipboard."),
+                I18n.tr("<b>Middle-click</b> the pill to screenshot and scan region."),
                 I18n.tr("<b>Drop image</b> onto the pill or popout to scan QR code."),
                 I18n.tr("<b>Drop text</b> onto the pill or popout to generate QR code."),
                 I18n.tr("Click the <b>WiFi icon</b> to quickly share current network.")
