@@ -101,7 +101,9 @@ PluginComponent {
         
         Proc.runCommand(
             "generate-qr",
-            ["qrencode", "-s", pluginRoot.qrSize, "-o", targetPath, trimmed],
+            // "--" stops qrencode's option parsing so text starting with a dash
+            // (e.g. "-h", "-V") is encoded literally instead of treated as a flag.
+            ["qrencode", "-s", pluginRoot.qrSize, "-o", targetPath, "--", trimmed],
             (stdout, exitCode) => {
                 if (exitCode === 0) {
                     const newSource = "file://" + targetPath + "?t=" + Date.now();
