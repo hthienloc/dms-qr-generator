@@ -444,9 +444,9 @@ PluginComponent {
             PopoutComponent {
                 id: mainContent
                 width: parent ? parent.width : 0
-                headerText: "QR Generator & <small>Scanner</small>"
+                headerText: ""
                 detailsText: ""
-                showCloseButton: true
+                showCloseButton: false
                 focus: true
 
                 property var parentPopout: null
@@ -652,7 +652,7 @@ PluginComponent {
 
     popoutWidth: 350
     popoutHeight: {
-        let h = (pluginRoot.hasResult) ? 616 : 480;
+        let h = (pluginRoot.hasResult) ? 560 : 424;
         return pluginRoot.showHints ? h : h - 40;
     }
 }
