@@ -2,7 +2,7 @@
   "id": "qrGenerator",
   "name": "QR Generator",
   "description": "Generate QR codes from clipboard or text, with export support",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "license": "GPL-3.0",
   "author": "Loc Huynh",
   "icon": "qr_code_2",
