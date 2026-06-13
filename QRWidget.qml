@@ -19,6 +19,10 @@ PluginComponent {
     readonly property bool showHints: pluginData.showHints ?? true
     
     property string currentText: ""
+    // Exact string encoded by the currently displayed QR (set once generation
+    // succeeds). SVG export uses this so it stays WYSIWYG like the PNG path,
+    // even if currentText has already advanced during a debounce/render cycle.
+    property string renderedText: ""
     property bool isFetchingWifi: false
     property var manualInputInput: null
     property var activePopoutReference: null
@@ -43,6 +47,7 @@ PluginComponent {
 
     function clearQR() {
         currentText = "";
+        renderedText = "";
         sourceA = "";
         sourceB = "";
         hasResult = false;
@@ -101,7 +106,9 @@ PluginComponent {
         
         Proc.runCommand(
             "generate-qr",
-            ["qrencode", "-s", pluginRoot.qrSize, "-o", targetPath, trimmed],
+            // "--" stops qrencode's option parsing so text starting with a dash
+            // (e.g. "-h", "-V") is encoded literally instead of treated as a flag.
+            ["qrencode", "-s", pluginRoot.qrSize, "-o", targetPath, "--", trimmed],
             (stdout, exitCode) => {
                 if (exitCode === 0) {
                     const newSource = "file://" + targetPath + "?t=" + Date.now();
@@ -110,6 +117,7 @@ PluginComponent {
                     } else {
                         pluginRoot.sourceA = newSource;
                     }
+                    pluginRoot.renderedText = trimmed;
                     pluginRoot.hasResult = true;
                 } else {
                     if (stdout && stdout.includes("not found")) {
@@ -123,8 +131,9 @@ PluginComponent {
         )
     }
 
-    function saveImage() {
+    function saveImage(format) {
         if (!pluginRoot.hasResult) return;
+        saveBrowserModal.saveFormat = (format === "svg") ? "svg" : "png";
         const activePath = pluginRoot.useImageA ? pluginRoot.pathA : pluginRoot.pathB;
         saveBrowserModal.activePath = activePath;
         isSaving = true;
@@ -134,13 +143,14 @@ PluginComponent {
 
     FileBrowserModal {
         id: saveBrowserModal
-        browserTitle: "Save QR Image"
+        browserTitle: saveFormat === "svg" ? "Save QR (SVG)" : "Save QR Image"
         browserIcon: "save"
         saveMode: true
-        defaultFileName: "qr_" + new Date().toISOString().replace(/[:.T]/g, '-').replace(/-/g, '').slice(0, 12) + ".png"
-        fileExtensions: ["*.png"]
+        defaultFileName: "qr_" + new Date().toISOString().replace(/[:.T]/g, '-').replace(/-/g, '').slice(0, 12) + "." + saveFormat
+        fileExtensions: saveFormat === "svg" ? ["*.svg"] : ["*.png"]
 
         property string activePath: ""
+        property string saveFormat: "png"
 
         onFileSelected: filePath => {
             isSaving = true;
@@ -150,19 +160,35 @@ PluginComponent {
             } else if (destPath.startsWith("file: ")) {
                 destPath = destPath.substring(6);
             }
-            Proc.runCommand(
-                "export-qr",
-                ["sh", "-c", "cp \"$1\" \"$2\"", "sh", activePath, destPath],
-                (stdout, exitCode) => {
-                    isSaving = false;
-                    if (exitCode === 0) {
-                        ToastService.showInfo("Saved successfully!");
-                    } else {
-                        ToastService.showError("Failed to save image.");
-                    }
-                },
-                0
-            );
+
+            const onDone = (stdout, exitCode) => {
+                isSaving = false;
+                if (exitCode === 0) {
+                    ToastService.showInfo("Saved successfully!");
+                } else {
+                    ToastService.showError("Failed to save image.");
+                }
+            };
+
+            if (saveFormat === "svg") {
+                // SVG is vector: re-render at full quality straight to the target.
+                // Encode renderedText (the displayed QR's source), not the live
+                // field, and "--" guards against dash-prefixed text. Mirrors the
+                // PNG path's WYSIWYG guarantee.
+                Proc.runCommand(
+                    "export-qr-svg",
+                    ["qrencode", "-t", "SVG", "-s", pluginRoot.qrSize, "-o", destPath, "--", pluginRoot.renderedText],
+                    onDone,
+                    0
+                );
+            } else {
+                Proc.runCommand(
+                    "export-qr",
+                    ["sh", "-c", "cp \"$1\" \"$2\"", "sh", activePath, destPath],
+                    onDone,
+                    0
+                );
+            }
             close();
         }
         onDialogClosed: isSaving = false
@@ -571,27 +597,37 @@ PluginComponent {
                         spacing: Theme.spacingM
                         visible: pluginRoot.hasResult
 
+                        DankButton {
+                            text: I18n.tr("Copy Image")
+                            width: parent.width
+                            iconName: "content_copy"
+                            backgroundColor: Theme.primary
+                            enabled: pluginRoot.hasResult
+                            onClicked: pluginRoot.copyImageToClipboard()
+                        }
+
                         Row {
                             width: parent.width
                             spacing: Theme.spacingS
-                            
-                            DankButton {
-                                text: I18n.tr("Copy Image")
-                                width: (parent.width - Theme.spacingS) / 2
-                                iconName: "content_copy"
-                                backgroundColor: Theme.primary
-                                enabled: pluginRoot.hasResult
-                                onClicked: pluginRoot.copyImageToClipboard()
-                            }
 
                             DankButton {
-                                text: I18n.tr("Save Image")
+                                text: I18n.tr("Save PNG")
                                 width: (parent.width - Theme.spacingS) / 2
                                 iconName: "save"
                                 backgroundColor: Theme.surfaceContainerHighest
                                 textColor: Theme.surfaceText
                                 enabled: pluginRoot.hasResult
-                                onClicked: pluginRoot.saveImage()
+                                onClicked: pluginRoot.saveImage("png")
+                            }
+
+                            DankButton {
+                                text: I18n.tr("Save SVG")
+                                width: (parent.width - Theme.spacingS) / 2
+                                iconName: "shape_line"
+                                backgroundColor: Theme.surfaceContainerHighest
+                                textColor: Theme.surfaceText
+                                enabled: pluginRoot.hasResult
+                                onClicked: pluginRoot.saveImage("svg")
                             }
                         }
                     }
@@ -616,7 +652,7 @@ PluginComponent {
 
     popoutWidth: 350
     popoutHeight: {
-        let h = (pluginRoot.hasResult) ? 560 : 480;
+        let h = (pluginRoot.hasResult) ? 616 : 480;
         return pluginRoot.showHints ? h : h - 40;
     }
 }
