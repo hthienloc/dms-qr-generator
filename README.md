@@ -46,7 +46,7 @@ GPL-3.0
 
 ## Roadmap / TODO
 
-- [x] **High-quality SVG export** support for scalable graphics.
+- [x] **High-quality SVG export** for scalable graphics.
 - [ ] **Configurable Error Correction Level** (L, M, Q, H) for more robust codes.
 - [ ] **Dedicated Templates** for VCard (Contact) and Calendar Event generation.
 - [ ] **Local History** of generated/scanned QR codes (opt-in for privacy).
