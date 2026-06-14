@@ -18,11 +18,18 @@ PluginComponent {
     readonly property string qrSize: pluginData.qrSize || "6"
     readonly property bool showHints: pluginData.showHints ?? true
     
+    // Free-text input content, and the target of explicit actions (Wi-Fi share,
+    // clipboard paste, drag-drop, screenshot scan). Bound to the manual field.
     property string currentText: ""
     // Exact string encoded by the currently displayed QR (set once generation
-    // succeeds). SVG export uses this so it stays WYSIWYG like the PNG path,
-    // even if currentText has already advanced during a debounce/render cycle.
+    // succeeds). SVG export uses this so it stays WYSIWYG like the PNG path.
     property string renderedText: ""
+    // Single source of truth for which input owns the one QR output:
+    // "text" | "contact" | "event" | "". resolveQR() (in the popout) uses it so
+    // the inputs never clobber each other -- a filled template outranks the
+    // free-text field, so typing there can't overwrite a contact/event QR.
+    property string activeSource: ""
+    property string pendingPayload: ""
     property bool isFetchingWifi: false
     property var manualInputInput: null
     property var activePopoutReference: null
@@ -39,15 +46,17 @@ PluginComponent {
     property string sourceB: ""
 
     Timer {
-        id: debounceTimer
+        id: genTimer
         interval: 200
         repeat: false
-        onTriggered: pluginRoot.generateQRInternal(pluginRoot.currentText)
+        onTriggered: pluginRoot.generateQRInternal(pluginRoot.pendingPayload)
     }
 
     function clearQR() {
         currentText = "";
         renderedText = "";
+        activeSource = "";
+        pendingPayload = "";
         sourceA = "";
         sourceB = "";
         hasResult = false;
@@ -74,7 +83,7 @@ PluginComponent {
             (stdout, exitCode) => {
                 pluginRoot.isDecoding = false;
                 if (exitCode === 0 && stdout.trim() !== "") {
-                    pluginRoot.generateQR(stdout.trim());
+                    pluginRoot.generateText(stdout.trim());
                 } else {
                     pluginRoot.droppedImagePath = "";
                     ToastService.showError("Failed to decode QR code.");
@@ -84,16 +93,33 @@ PluginComponent {
         );
     }
 
-    function generateQR(text) {
+    // Single debounced generator. resolveQR() (in the popout) and generateText()
+    // funnel everything through here, so the dual buffer never has two writers.
+    function generate(payload) {
+        pluginRoot.pendingPayload = payload;
+        genTimer.restart();
+    }
+
+    function clearResult() {
+        genTimer.stop();
+        pluginRoot.sourceA = "";
+        pluginRoot.sourceB = "";
+        pluginRoot.hasResult = false;
+        pluginRoot.renderedText = "";
+    }
+
+    // Explicit text actions (Wi-Fi, paste, drag-drop, scan) force the text source,
+    // overriding template priority, and mirror the value into the text field.
+    function generateText(text) {
+        pluginRoot.currentText = text;
+        pluginRoot.activeSource = "text";
+        if (pluginRoot.manualInputInput)
+            pluginRoot.manualInputInput.text = text;
         if (!text || text.trim() === "") {
-            currentText = "";
-            sourceA = "";
-            sourceB = "";
-            hasResult = false;
+            pluginRoot.clearResult();
             return;
         }
-        currentText = text;
-        debounceTimer.restart();
+        pluginRoot.generate(text);
     }
 
     function generateQRInternal(text) {
@@ -298,9 +324,7 @@ PluginComponent {
                 pluginRoot.isFetchingWifi = false;
                 const result = stdout.trim();
                 if (exitCode === 0 && result !== "NO_WIFI") {
-                    pluginRoot.currentText = result;
-                    if (pluginRoot.manualInputInput) pluginRoot.manualInputInput.text = result;
-                    pluginRoot.generateQR(result);
+                    pluginRoot.generateText(result);
                 }
             },
             0
@@ -346,9 +370,7 @@ PluginComponent {
                         return;
                     }
 
-                    pluginRoot.currentText = stdout;
-                    pluginRoot.generateQR(stdout);
-                    if (pluginRoot.manualInputInput) pluginRoot.manualInputInput.text = stdout;
+                    pluginRoot.generateText(stdout);
                 }
                 
                 // Only trigger (toggle) if not already visible
@@ -411,7 +433,7 @@ PluginComponent {
                         if (isImage) {
                             pluginRoot.decodeQR(firstUrl);
                         } else {
-                            pluginRoot.generateQR(firstUrl);
+                            pluginRoot.generateText(firstUrl);
                         }
                     }
                     pluginRoot.triggerPopout();
@@ -480,7 +502,7 @@ PluginComponent {
                         if (isImage) {
                             pluginRoot.decodeQR(firstUrl);
                         } else {
-                            pluginRoot.generateQR(firstUrl);
+                            pluginRoot.generateText(firstUrl);
                         }
                     }
                     pluginRoot.triggerPopout();
@@ -511,6 +533,37 @@ PluginComponent {
 
                 property var parentPopout: null
                 onParentPopoutChanged: pluginRoot.activePopoutReference = parentPopout
+
+                // The single resolver: decides which input owns the one QR.
+                // A filled template (key field set) outranks the free-text field;
+                // the active source is released when its key content is cleared,
+                // then falls back to another filled input (templates first).
+                function resolveQR() {
+                    const cFilled = cName.text.trim() !== "";
+                    // An event needs at least a title and a start date to be a
+                    // valid VEVENT, so it only owns the QR once both are present.
+                    const eFilled = evTitle.text.trim() !== "" && evStartDate.text.trim() !== "";
+                    const tFilled = pluginRoot.currentText.trim() !== "";
+
+                    let src = pluginRoot.activeSource;
+                    if ((src === "contact" && !cFilled) || (src === "event" && !eFilled) || (src === "text" && !tFilled))
+                        src = "";
+                    if (src === "") {
+                        if (cFilled) src = "contact";
+                        else if (eFilled) src = "event";
+                        else if (tFilled) src = "text";
+                    }
+                    pluginRoot.activeSource = src;
+
+                    if (src === "contact")
+                        pluginRoot.generate(pluginRoot.buildVCard(cName.text, cPhone.text, cEmail.text, cOrg.text, cUrl.text));
+                    else if (src === "event")
+                        pluginRoot.generate(pluginRoot.buildEvent(evTitle.text, evLoc.text, evStartDate.text, evStartTime.text, evEndDate.text, evEndTime.text));
+                    else if (src === "text")
+                        pluginRoot.generate(pluginRoot.currentText);
+                    else
+                        pluginRoot.clearResult();
+                }
 
                 PluginShortcut {
                     parentPopout: mainContent.parentPopout
@@ -562,13 +615,163 @@ PluginComponent {
                             Component.onCompleted: {
                                 pluginRoot.manualInputInput = manualInput;
                             }
-                            onTextEdited: pluginRoot.generateQR(text)
-                            onEditingFinished: pluginRoot.generateQR(text)
-                            onTextChanged: {
-                                if (text === "") {
-                                    debounceTimer.stop();
-                                    pluginRoot.currentText = "";
-                                    pluginRoot.hasResult = false;
+                            // Take over the QR only when no template owns it, so
+                            // typing here can't overwrite a filled contact/event.
+                            onTextEdited: {
+                                pluginRoot.currentText = text;
+                                if (cName.text.trim() === "" && evTitle.text.trim() === "")
+                                    pluginRoot.activeSource = "text";
+                                mainContent.resolveQR();
+                            }
+                            onEditingFinished: mainContent.resolveQR()
+                        }
+                    }
+
+                    // 1b. Structured Templates (Contact / Calendar Event)
+                    Column {
+                        width: parent.width
+                        spacing: Theme.spacingS
+
+                        // ---- Contact (vCard) ----
+                        Column {
+                            id: contactSection
+                            width: parent.width
+                            spacing: Theme.spacingS
+                            property bool expanded: false
+
+                            Rectangle {
+                                width: parent.width
+                                height: 40
+                                radius: Theme.cornerRadius
+                                color: "transparent"
+
+                                DankIcon {
+                                    id: contactHdrIcon
+                                    name: "contact_phone"
+                                    size: Theme.iconSizeSmall
+                                    color: Theme.surfaceText
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: Theme.spacingS
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                                StyledText {
+                                    text: I18n.tr("Contact (vCard)")
+                                    font.weight: Font.Medium
+                                    anchors.left: contactHdrIcon.right
+                                    anchors.leftMargin: Theme.spacingS
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                                DankIcon {
+                                    name: "expand_more"
+                                    size: Theme.iconSizeSmall
+                                    color: Theme.surfaceText
+                                    rotation: contactSection.expanded ? 180 : 0
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: Theme.spacingS
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    Behavior on rotation { NumberAnimation { duration: 150 } }
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: contactSection.expanded = !contactSection.expanded
+                                }
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: Theme.spacingS
+                                clip: true
+                                height: contactSection.expanded ? implicitHeight : 0
+                                visible: height > 0
+                                Behavior on height { NumberAnimation { duration: 150 } }
+
+                                DankTextField { id: cName;  width: parent.width; placeholderText: "Full name";     onTextEdited: { pluginRoot.activeSource = "contact"; mainContent.resolveQR(); } }
+                                DankTextField { id: cPhone; width: parent.width; placeholderText: "Phone";         onTextEdited: { pluginRoot.activeSource = "contact"; mainContent.resolveQR(); } }
+                                DankTextField { id: cEmail; width: parent.width; placeholderText: "Email";         onTextEdited: { pluginRoot.activeSource = "contact"; mainContent.resolveQR(); } }
+                                DankTextField { id: cOrg;   width: parent.width; placeholderText: "Organization";  onTextEdited: { pluginRoot.activeSource = "contact"; mainContent.resolveQR(); } }
+                                DankTextField { id: cUrl;   width: parent.width; placeholderText: "Website / URL"; onTextEdited: { pluginRoot.activeSource = "contact"; mainContent.resolveQR(); } }
+                            }
+                        }
+
+                        // ---- Calendar Event ----
+                        Column {
+                            id: eventSection
+                            width: parent.width
+                            spacing: Theme.spacingS
+                            property bool expanded: false
+
+                            Rectangle {
+                                width: parent.width
+                                height: 40
+                                radius: Theme.cornerRadius
+                                color: "transparent"
+
+                                DankIcon {
+                                    id: eventHdrIcon
+                                    name: "event"
+                                    size: Theme.iconSizeSmall
+                                    color: Theme.surfaceText
+                                    anchors.left: parent.left
+                                    anchors.leftMargin: Theme.spacingS
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                                StyledText {
+                                    text: I18n.tr("Calendar Event")
+                                    font.weight: Font.Medium
+                                    anchors.left: eventHdrIcon.right
+                                    anchors.leftMargin: Theme.spacingS
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                                DankIcon {
+                                    name: "expand_more"
+                                    size: Theme.iconSizeSmall
+                                    color: Theme.surfaceText
+                                    rotation: eventSection.expanded ? 180 : 0
+                                    anchors.right: parent.right
+                                    anchors.rightMargin: Theme.spacingS
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    Behavior on rotation { NumberAnimation { duration: 150 } }
+                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: eventSection.expanded = !eventSection.expanded
+                                }
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: Theme.spacingS
+                                clip: true
+                                height: eventSection.expanded ? implicitHeight : 0
+                                visible: height > 0
+                                Behavior on height { NumberAnimation { duration: 150 } }
+
+                                DankTextField { id: evTitle; width: parent.width; placeholderText: "Event title"; onTextEdited: { pluginRoot.activeSource = "event"; mainContent.resolveQR(); } }
+                                DankTextField { id: evLoc;   width: parent.width; placeholderText: "Location";    onTextEdited: { pluginRoot.activeSource = "event"; mainContent.resolveQR(); } }
+
+                                StyledText {
+                                    text: I18n.tr("Start")
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: Theme.surfaceTextSecondary
+                                }
+                                Row {
+                                    width: parent.width
+                                    spacing: Theme.spacingS
+                                    DankTextField { id: evStartDate; width: (parent.width - Theme.spacingS) * 0.58; placeholderText: "YYYY-MM-DD"; onTextEdited: { pluginRoot.activeSource = "event"; mainContent.resolveQR(); } }
+                                    DankTextField { id: evStartTime; width: (parent.width - Theme.spacingS) * 0.42; placeholderText: "HH:MM"; onTextEdited: { pluginRoot.activeSource = "event"; mainContent.resolveQR(); } }
+                                }
+                                StyledText {
+                                    text: I18n.tr("End")
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: Theme.surfaceTextSecondary
+                                }
+                                Row {
+                                    width: parent.width
+                                    spacing: Theme.spacingS
+                                    DankTextField { id: evEndDate; width: (parent.width - Theme.spacingS) * 0.58; placeholderText: "YYYY-MM-DD"; onTextEdited: { pluginRoot.activeSource = "event"; mainContent.resolveQR(); } }
+                                    DankTextField { id: evEndTime; width: (parent.width - Theme.spacingS) * 0.42; placeholderText: "HH:MM"; onTextEdited: { pluginRoot.activeSource = "event"; mainContent.resolveQR(); } }
                                 }
                             }
                         }
