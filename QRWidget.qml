@@ -179,7 +179,7 @@ PluginComponent {
         if (email.trim() !== "") lines.push("EMAIL;TYPE=INTERNET:" + icalEscape(email.trim()));
         if (url.trim() !== "")   lines.push("URL:" + icalEscape(url.trim()));
         lines.push("END:VCARD");
-        return lines.join("\n");
+        return lines.join("\r\n");
     }
 
     // Combine date "YYYY-MM-DD" + time "HH:MM" into a floating local iCal stamp
@@ -202,7 +202,7 @@ PluginComponent {
     function buildEvent(title, location, startDate, startTime, endDate, endTime) {
         const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//dms-qr-generator//EN", "BEGIN:VEVENT"];
         // UID and DTSTAMP are REQUIRED for a valid VEVENT (RFC 5545 3.6.1).
-        lines.push("UID:" + Date.now() + "@dms-qr-generator");
+        lines.push("UID:" + Date.now() + "-" + Math.floor(Math.random() * 100000) + "@dms-qr-generator");
         lines.push("DTSTAMP:" + icalNow());
         lines.push("SUMMARY:" + icalEscape(title.trim()));
         if (location.trim() !== "") lines.push("LOCATION:" + icalEscape(location.trim()));
@@ -214,7 +214,7 @@ PluginComponent {
             if (end !== "") lines.push("DTEND:" + end);
         }
         lines.push("END:VEVENT", "END:VCALENDAR");
-        return lines.join("\n");
+        return lines.join("\r\n");
     }
 
     function saveImage(format) {

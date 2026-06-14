@@ -1,6 +1,6 @@
 {
-  "<b>Drop image</b> onto the pill or popout to scan QR code.": "<b>将图像拖放到药丸或弹出窗口上以扫描二维码。",
-  "<b>Drop text</b> onto the pill or popout to generate QR code.": "<b>将文本拖放到药丸或弹出窗口上以生成二维码。",
+  "<b>Drop image</b> onto the pill or popout to scan QR code.": "<b>将图像拖放到药丸或弹出窗口上</b>以扫描二维码。",
+  "<b>Drop text</b> onto the pill or popout to generate QR code.": "<b>将文本拖放到药丸或弹出窗口上</b>以生成二维码。",
   "<b>Left-click</b> the pill to open the generator.": "<b>左键单击</b>药丸以打开发生器。",
   "<b>Middle-click</b> the pill to screenshot and scan region.": "<b>中键单击</b>药丸以进行屏幕截图和扫描区域。",
   "<b>Right-click</b> the pill to generate from clipboard.": "<b>右键单击</b>要从剪贴板生成的药丸。",
