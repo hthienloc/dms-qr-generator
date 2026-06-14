@@ -131,6 +131,66 @@ PluginComponent {
         )
     }
 
+    // Escape a value for vCard 3.0 / iCalendar TEXT fields (RFC 2426 / 5545):
+    // backslash, semicolon, comma and newline must be backslash-escaped.
+    function icalEscape(value) {
+        if (value === undefined || value === null) return "";
+        return String(value)
+            .replace(/\\/g, "\\\\")
+            .replace(/;/g, "\\;")
+            .replace(/,/g, "\\,")
+            .replace(/\r\n|\r|\n/g, "\\n");
+    }
+
+    function buildVCard(name, phone, email, org, url) {
+        const lines = ["BEGIN:VCARD", "VERSION:3.0"];
+        const fn = name.trim();
+        // N is required in vCard 3.0; put the whole name in the family slot.
+        lines.push("N:" + icalEscape(fn) + ";;;;");
+        lines.push("FN:" + icalEscape(fn));
+        if (org.trim() !== "")   lines.push("ORG:" + icalEscape(org.trim()));
+        if (phone.trim() !== "") lines.push("TEL;TYPE=CELL:" + icalEscape(phone.trim()));
+        if (email.trim() !== "") lines.push("EMAIL;TYPE=INTERNET:" + icalEscape(email.trim()));
+        if (url.trim() !== "")   lines.push("URL:" + icalEscape(url.trim()));
+        lines.push("END:VCARD");
+        return lines.join("\n");
+    }
+
+    // Combine date "YYYY-MM-DD" + time "HH:MM" into a floating local iCal stamp
+    // "YYYYMMDDTHHMMSS". Returns "" if the date has no digits.
+    function icalStamp(date, time) {
+        const d = (date || "").replace(/[^0-9]/g, "");
+        if (d.length < 8) return "";
+        const t = ((time || "").replace(/[^0-9]/g, "") + "000000").slice(0, 6);
+        return d.slice(0, 8) + "T" + t;
+    }
+
+    // Current UTC time as an iCal UTC stamp "YYYYMMDDTHHMMSSZ" (for DTSTAMP).
+    function icalNow() {
+        const d = new Date();
+        const p = n => (n < 10 ? "0" : "") + n;
+        return "" + d.getUTCFullYear() + p(d.getUTCMonth() + 1) + p(d.getUTCDate())
+            + "T" + p(d.getUTCHours()) + p(d.getUTCMinutes()) + p(d.getUTCSeconds()) + "Z";
+    }
+
+    function buildEvent(title, location, startDate, startTime, endDate, endTime) {
+        const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//dms-qr-generator//EN", "BEGIN:VEVENT"];
+        // UID and DTSTAMP are REQUIRED for a valid VEVENT (RFC 5545 3.6.1).
+        lines.push("UID:" + Date.now() + "@dms-qr-generator");
+        lines.push("DTSTAMP:" + icalNow());
+        lines.push("SUMMARY:" + icalEscape(title.trim()));
+        if (location.trim() !== "") lines.push("LOCATION:" + icalEscape(location.trim()));
+        // DTSTART is REQUIRED (no METHOD); DTEND is only valid alongside DTSTART.
+        const start = icalStamp(startDate, startTime);
+        const end = icalStamp(endDate, endTime);
+        if (start !== "") {
+            lines.push("DTSTART:" + start);
+            if (end !== "") lines.push("DTEND:" + end);
+        }
+        lines.push("END:VEVENT", "END:VCALENDAR");
+        return lines.join("\n");
+    }
+
     function saveImage(format) {
         if (!pluginRoot.hasResult) return;
         saveBrowserModal.saveFormat = (format === "svg") ? "svg" : "png";
