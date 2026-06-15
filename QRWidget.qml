@@ -64,7 +64,7 @@ PluginComponent {
         if (manualInputInput) manualInputInput.text = "";
     }
 
-    function decodeQR(path) {
+    function decodeQR(path, triggerPopoutOnSuccess = true) {
         if (!path) return;
         
         let cleanPath = path;
@@ -84,6 +84,9 @@ PluginComponent {
                 pluginRoot.isDecoding = false;
                 if (exitCode === 0 && stdout.trim() !== "") {
                     pluginRoot.generateText(stdout.trim());
+                    if (triggerPopoutOnSuccess) {
+                        pluginRoot.triggerPopout();
+                    }
                 } else {
                     pluginRoot.droppedImagePath = "";
                     ToastService.showError("Failed to decode QR code.");
@@ -334,15 +337,14 @@ PluginComponent {
     function scanFromScreenshot() {
         pluginRoot.isDecoding = true;
         const tempPath = "/tmp/dms-qr-screenshot.png";
-        
+
         Proc.runCommand(
             "screenshot-qr",
             ["dms", "screenshot", "region", "--no-confirm", "--no-notify", "--dir", "/tmp", "--filename", "dms-qr-screenshot.png"],
             (stdout, exitCode) => {
                 pluginRoot.isDecoding = false;
                 if (exitCode === 0) {
-                    pluginRoot.decodeQR(tempPath);
-                    pluginRoot.triggerPopout();
+                    pluginRoot.decodeQR(tempPath, true);
                 } else {
                     ToastService.showError("Failed to take screenshot or selection cancelled.");
                 }
