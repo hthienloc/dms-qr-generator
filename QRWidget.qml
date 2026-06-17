@@ -16,6 +16,8 @@ PluginComponent {
     readonly property bool clearQrOnClose: pluginData.clearQrOnClose ?? true
     readonly property string pillStyle: pluginData.pillStyle || "icon"
     readonly property string qrSize: pluginData.qrSize || "6"
+    // qrencode error-correction level: L | M | Q | H (higher = more robust, denser).
+    readonly property string ecLevel: pluginData.errorCorrection || "M"
     readonly property bool showHints: pluginData.showHints ?? true
     
     // Free-text input content, and the target of explicit actions (Wi-Fi share,
@@ -137,7 +139,7 @@ PluginComponent {
             "generate-qr",
             // "--" stops qrencode's option parsing so text starting with a dash
             // (e.g. "-h", "-V") is encoded literally instead of treated as a flag.
-            ["qrencode", "-s", pluginRoot.qrSize, "-o", targetPath, "--", trimmed],
+            ["qrencode", "-s", pluginRoot.qrSize, "-l", pluginRoot.ecLevel, "-o", targetPath, "--", trimmed],
             (stdout, exitCode) => {
                 if (exitCode === 0) {
                     const newSource = "file://" + targetPath + "?t=" + Date.now();
@@ -266,7 +268,7 @@ PluginComponent {
                 // PNG path's WYSIWYG guarantee.
                 Proc.runCommand(
                     "export-qr-svg",
-                    ["qrencode", "-t", "SVG", "-s", pluginRoot.qrSize, "-o", destPath, "--", pluginRoot.renderedText],
+                    ["qrencode", "-t", "SVG", "-s", pluginRoot.qrSize, "-l", pluginRoot.ecLevel, "-o", destPath, "--", pluginRoot.renderedText],
                     onDone,
                     0
                 );
