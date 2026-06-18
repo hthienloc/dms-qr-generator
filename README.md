@@ -23,6 +23,7 @@ git clone https://github.com/hthienloc/dms-qr-generator ~/.config/DankMaterialSh
 - **Scan QR codes** - Decode from dropped images
 - **Clipboard integration** - Right-click to generate from clipboard
 - **Export** - Save as PNG or scalable SVG
+- **Error correction** - Choose L/M/Q/H for more damage-resistant codes
 - **Privacy focused** - Auto-clears on close
 
 ## Usage
@@ -47,7 +48,7 @@ GPL-3.0
 ## Roadmap / TODO
 
 - [x] **High-quality SVG export** for scalable graphics.
-- [ ] **Configurable Error Correction Level** (L, M, Q, H) for more robust codes.
+- [x] **Configurable Error Correction Level** (L, M, Q, H) for more robust codes.
 - [ ] **Dedicated Templates** for VCard (Contact) and Calendar Event generation.
 - [ ] **Local History** of generated/scanned QR codes (opt-in for privacy).
 - [ ] **Custom Styling**: Foreground/Background color selection and optional center logo overlay.

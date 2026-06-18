@@ -15,10 +15,11 @@ PluginSettings {
         SectionTitle { 
             text: I18n.tr("Generation & Privacy")
             icon: "security"
-            showReset: clearQrOnClose.isDirty || qrSize.isDirty
+            showReset: clearQrOnClose.isDirty || qrSize.isDirty || errorCorrection.isDirty
             onResetClicked: {
                 clearQrOnClose.resetToDefault();
                 qrSize.resetToDefault();
+                errorCorrection.resetToDefault();
             }
         }
 
@@ -42,6 +43,22 @@ PluginSettings {
                 { label: I18n.tr("Large"), value: "10" }
             ]
             defaultValue: "6"
+        }
+
+        Separator {}
+
+        SelectionSettingPlus {
+            id: errorCorrection
+            settingKey: "errorCorrection"
+            label: I18n.tr("Error Correction Level")
+            description: I18n.tr("Higher levels keep the code scannable even when partly damaged or covered, at the cost of a denser code.")
+            options: [
+                { label: I18n.tr("Low (L)"), value: "L" },
+                { label: I18n.tr("Medium (M)"), value: "M" },
+                { label: I18n.tr("Quartile (Q)"), value: "Q" },
+                { label: I18n.tr("High (H)"), value: "H" }
+            ]
+            defaultValue: "M"
         }
     }
 
