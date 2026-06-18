@@ -16,8 +16,6 @@ PluginComponent {
     readonly property bool clearQrOnClose: pluginData.clearQrOnClose ?? true
     readonly property string pillStyle: pluginData.pillStyle || "icon"
     readonly property string qrSize: pluginData.qrSize || "6"
-    // qrencode error-correction level: L | M | Q | H (higher = more robust, denser).
-    // Validate so a corrupt/hand-edited config value can't reach qrencode's -l flag.
     readonly property string ecLevel: ["L", "M", "Q", "H"].indexOf(pluginData.errorCorrection) !== -1 ? pluginData.errorCorrection : "M"
     readonly property bool showHints: pluginData.showHints ?? true
     
